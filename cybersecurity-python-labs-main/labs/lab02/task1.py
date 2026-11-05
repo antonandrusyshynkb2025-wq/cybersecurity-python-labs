@@ -3,8 +3,7 @@ import hmac
 import os
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
-from typing import Optional, Set
+from datetime import datetime, timedelta, timezone
 
 # Константи
 ITERATIONS = 100_000
@@ -18,8 +17,8 @@ class User:
         self.email = email
         self.role = role
         self.active = active
-        self.__password_hash: Optional[bytes] = None
-        self.__password_salt: Optional[bytes] = None
+        self.__password_hash: bytes | None = None
+        self.__password_salt: bytes | None = None
 
     @property
     def email(self) -> str:
@@ -53,7 +52,8 @@ class User:
 
 
 class Admin(User):
-    def __init__(self, username: str, email: str, permissions: Set[str] = None):
+    # ВИПРАВЛЕНО: додано | None для permissions
+    def __init__(self, username: str, email: str, permissions: set[str] | None = None):
         super().__init__(username, email, role="admin")
         self.permissions = permissions if permissions is not None else set()
 
@@ -82,7 +82,9 @@ class Session:
     def is_active(self, timeout_sec: int) -> bool:
         if timeout_sec < 0:
             raise ValueError("Timeout cannot be negative")
-        return (datetime.now(timezone.utc) - self.last_activity) < timedelta(seconds=timeout_sec)
+        return (datetime.now(timezone.utc) - self.last_activity) < timedelta(
+            seconds=timeout_sec
+        )
 
 
 @dataclass
@@ -105,7 +107,10 @@ class AuditLog:
 
 
 class UserAccount:
-    def __init__(self, user: User, session: Session = None, audit: AuditLog = None):
+    # ВИПРАВЛЕНО: додано | None для session та audit
+    def __init__(
+        self, user: User, session: Session | None = None, audit: AuditLog | None = None
+    ):
         self.user = user
         self.session = session
         self.audit = audit or AuditLog()

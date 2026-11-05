@@ -1,0 +1,3 @@
+LAB1 - python -m labs.lab02.main demo
+LAB2 - python -m labs.lab02.task2 --dir labs/lab02/data --baseline labs/lab02/data/baseline.json --mode generate
+python -m labs.lab02.task2 --dir labs/lab02/data --baseline labs/lab02/data/baseline.json --mode check

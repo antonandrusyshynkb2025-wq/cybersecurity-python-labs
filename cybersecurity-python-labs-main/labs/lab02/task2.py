@@ -5,7 +5,9 @@ import logging
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Dict
+
+# Створення власного логера замість використання root-logger
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -25,11 +27,11 @@ def calculate_sha256(file_path: Path) -> str:
                 sha256_hash.update(byte_block)
         return sha256_hash.hexdigest()
     except (PermissionError, OSError) as e:
-        logging.error(f"Не вдалося прочитати файл {file_path}: {e}")
+        logger.error(f"Не вдалося прочитати файл {file_path}: {e}")
         return ""
 
 
-def scan_directory(directory: Path) -> Dict[str, FileInfo]:
+def scan_directory(directory: Path) -> dict[str, FileInfo]:
     """Рекурсивно сканує директорію та повертає словник об'єктів FileInfo."""
     files_data = {}
     for path in directory.rglob("*"):
@@ -53,24 +55,24 @@ def generate_baseline(directory: Path, baseline_path: Path):
     """Створює еталонний файл baseline.json."""
     data = scan_directory(directory)
     serializable_data = {k: asdict(v) for k, v in data.items()}
-    
+
     baseline_path.parent.mkdir(parents=True, exist_ok=True)
     with open(baseline_path, "w", encoding="utf-8") as f:
         json.dump(serializable_data, f, indent=4)
-    logging.info(f"Baseline створено у {baseline_path}")
+    logger.info(f"Baseline створено у {baseline_path}")
 
 
 def check_integrity(directory: Path, baseline_path: Path):
     """Порівнює поточний стан з baseline.json."""
     if not baseline_path.exists():
-        logging.error("Baseline файл не знайдено!")
+        logger.error("Baseline файл не знайдено!")
         return
 
     with open(baseline_path, "r", encoding="utf-8") as f:
         baseline = json.load(f)
 
     current_state = scan_directory(directory)
-    
+
     baseline_keys = set(baseline.keys())
     current_keys = set(current_state.keys())
 
@@ -78,43 +80,47 @@ def check_integrity(directory: Path, baseline_path: Path):
     for key in baseline_keys & current_keys:
         if baseline[key]["sha256"] != current_state[key].sha256:
             modified.append(key)
-            logging.warning(f"[MODIFIED] {key}")
+            logger.warning(f"[MODIFIED] {key}")
 
     created = current_keys - baseline_keys
     for key in created:
-        logging.warning(f"[CREATED] {key}")
+        logger.warning(f"[CREATED] {key}")
 
     deleted = baseline_keys - current_keys
     for key in deleted:
-        logging.warning(f"[DELETED] {key}")
+        logger.warning(f"[DELETED] {key}")
 
-    print(f"\n=== Summary ===")
-    print(f"Modified: {len(modified)}, Created: {len(created)}, Deleted: {len(deleted)}")
+    print("\n=== Summary ===")
+    print(
+        f"Modified: {len(modified)}, Created: {len(created)}, Deleted: {len(deleted)}"
+    )
 
 
 def main():
-    # Налаштування кодування для Windows, щоб уникнути UnicodeEncodeError
-    if sys.platform == 'win32':
-        sys.stdout.reconfigure(encoding='utf-8')
+    # Налаштування кодування для Windows
+    if sys.platform == "win32":
+        sys.stdout.reconfigure(encoding="utf-8")
 
     parser = argparse.ArgumentParser(description="File Integrity Monitor (FIM)")
     parser.add_argument("--dir", type=Path, required=True)
     parser.add_argument("--baseline", type=Path, required=True)
     parser.add_argument("--mode", choices=["generate", "check"], required=True)
-    parser.add_argument("--log-file", type=Path, default=Path("labs/lab02/data/fim_audit.log"))
-    
+    parser.add_argument(
+        "--log-file", type=Path, default=Path("labs/lab02/data/fim_audit.log")
+    )
+
     args = parser.parse_args()
 
     args.log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Використовуємо encoding='utf-8' для файлу логів
+    # Налаштування логування для нашого logger
     logging.basicConfig(
         level=logging.INFO,
         format="[%(levelname)s] %(message)s",
         handlers=[
-            logging.FileHandler(args.log_file, encoding='utf-8'),
-            logging.StreamHandler(sys.stdout)
-        ]
+            logging.FileHandler(args.log_file, encoding="utf-8"),
+            logging.StreamHandler(sys.stdout),
+        ],
     )
 
     if args.mode == "generate":
