@@ -107,7 +107,6 @@ class AuditLog:
 
 
 class UserAccount:
-    # ВИПРАВЛЕНО: додано | None для session та audit
     def __init__(
         self, user: User, session: Session | None = None, audit: AuditLog | None = None
     ):

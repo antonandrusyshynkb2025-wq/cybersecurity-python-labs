@@ -6,7 +6,6 @@ import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-# Створення власного логера замість використання root-logger
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +34,6 @@ def scan_directory(directory: Path) -> dict[str, FileInfo]:
     """Рекурсивно сканує директорію та повертає словник об'єктів FileInfo."""
     files_data = {}
     for path in directory.rglob("*"):
-        # Пропускаємо сам baseline.json та файли логів, щоб уникнути циклів/помилок
         if path.is_file() and path.name not in ["baseline.json", "fim_audit.log"]:
             try:
                 rel_path = str(path.relative_to(directory))
@@ -97,7 +95,6 @@ def check_integrity(directory: Path, baseline_path: Path):
 
 
 def main():
-    # Налаштування кодування для Windows
     if sys.platform == "win32":
         sys.stdout.reconfigure(encoding="utf-8")
 
@@ -113,7 +110,7 @@ def main():
 
     args.log_file.parent.mkdir(parents=True, exist_ok=True)
 
-    # Налаштування логування для нашого logger
+    # Налаштування логування
     logging.basicConfig(
         level=logging.INFO,
         format="[%(levelname)s] %(message)s",

@@ -30,7 +30,6 @@ def generate_hash(password: str, salt: str = SALT) -> str:
 
 
 def log_event(func):
-    # Декоратор для логування подій у JSON файл
     @wraps(func)
     def wrapper(*args, **kwargs):
         result = func(*args, **kwargs)
@@ -44,10 +43,25 @@ def log_event(func):
             "args": list(args),
             "kwargs": kwargs,
         }
+
         os.makedirs(DATA_DIR, exist_ok=True)
-        with open(LOG_FILE, "a", encoding="utf-8") as f:
-            json.dump(log_entry, f)
-            f.write("\n")
+
+        # Читаємо існуючі записи, якщо файл є
+        logs = []
+        if os.path.exists(LOG_FILE):
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                try:
+                    logs = json.load(f)
+                except json.JSONDecodeError:
+                    logs = []
+
+        # Додаємо новий
+        logs.append(log_entry)
+
+        # Записуємо з відступами (indent=4)
+        with open(LOG_FILE, "w", encoding="utf-8") as f:
+            json.dump(logs, f, indent=4, ensure_ascii=False)
+
         return result
 
     return wrapper
